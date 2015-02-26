@@ -1,0 +1,22 @@
+PC1;Premium Pilsner;12000;9500
+PC1;Old Ale;9900;
+PC1;FreeB;10450;
+PC1;Light;11400;
+PC2;Premium Pilsner;13200;12000
+PC2;Old Ale;11000;
+PC2;FreeB;11550;
+PC2;ClearBeer;7700;
+PC2;Light;12600;
+PC3;Forbidden Fruit;11000;7500
+PC3;Grand Cru;11000;
+PC4;Premium Pilsner;18000;12500
+PC4;Old Ale;15400;
+PC4;FreeB;11000;
+PC4;Light;14400;
+PC5;Premium Pilsner;19200;17000
+PC5;Old Ale;17600;
+PC5;FreeB;13200;
+PC5;ClearBeer;11550;
+PC5;Light;16800;
+PC6;Forbidden Fruit;14300;6500
+PC6;Grand Cru;17050;

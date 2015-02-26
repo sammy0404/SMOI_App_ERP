@@ -1,0 +1,7 @@
+D:\UU\OMVI\Project\FlorenceCPL\FlorenceCPL\bin\Debug\FlorenceCPL.exe.config
+D:\UU\OMVI\Project\FlorenceCPL\FlorenceCPL\obj\Debug\FlorenceCPL.csprojResolveAssemblyReference.cache
+D:\UU\OMVI\Project\FlorenceCPL\FlorenceCPL\bin\Debug\FlorenceCPL.exe
+D:\UU\OMVI\Project\FlorenceCPL\FlorenceCPL\bin\Debug\FlorenceCPL.pdb
+D:\UU\OMVI\Project\FlorenceCPL\FlorenceCPL\obj\Debug\FlorenceCPL.exe
+D:\UU\OMVI\Project\FlorenceCPL\FlorenceCPL\obj\Debug\FlorenceCPL.pdb
+D:\UU\OMVI\Project\FlorenceCPL\FlorenceCPL\bin\Debug\EPPlus.xml

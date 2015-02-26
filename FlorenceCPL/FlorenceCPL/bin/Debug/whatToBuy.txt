@@ -1,0 +1,7 @@
+Premium Pilsner;14450;0;53;PC4
+Old Ale;0;23;73;PC1
+FreeB;6750;345;0;PC2
+ClearBeer;0;12;342;PC5
+Forbidden Fruit;4;532;234;PC3
+Grand Cru;34556;345345;2335;PC6
+Light;5700;0;0;PC5
