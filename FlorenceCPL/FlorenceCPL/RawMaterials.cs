@@ -14,7 +14,7 @@ namespace FlorenceCPL
         public double priceSupply;
         public double voorraad;
         public int minOrderAmount;
-        public int bulkPrice;
+        public double bulkPrice;
         public int amountBoughtThisQuarter;
 
         public RawMaterials(string[] invoer)
@@ -23,7 +23,7 @@ namespace FlorenceCPL
             priceBuy = double.Parse(invoer[1]);
             priceSupply = double.Parse(invoer[2]);
             minOrderAmount = int.Parse(invoer[3]);
-            bulkPrice = int.Parse(invoer[4]);
+            bulkPrice = double.Parse(invoer[4]);
             voorraad = 0;
             amountBoughtThisQuarter = 0;
         }

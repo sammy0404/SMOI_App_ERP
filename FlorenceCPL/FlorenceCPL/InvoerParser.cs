@@ -15,6 +15,7 @@ namespace FlorenceCPL
         public List<RawMaterials> rawMaterials = new List<RawMaterials>();
         public List<BeerType> beerType = new List<BeerType>();
         public List<ProductieClusters> PCL = new List<ProductieClusters>();
+        public IT it;
         public void InvoerParsers()
         {
 
@@ -23,7 +24,7 @@ namespace FlorenceCPL
         public List<RawMaterials> GenerateRawMaterials()
         {
             RawMaterials nieuw;
-            StreamReader sr = new StreamReader("rawMaterials.txt");
+            StreamReader sr = new StreamReader("rawMaterials.csv");
             string invoer;
             string[] readedLine;
             while ((invoer = sr.ReadLine()) != null)
@@ -34,13 +35,24 @@ namespace FlorenceCPL
             }
             return rawMaterials;
         }
+        public IT FixIT()
+        {
+            StreamReader sr = new StreamReader("it.csv");
+            string invoer;
+            invoer = sr.ReadLine();
+            invoer = sr.ReadLine();
+            string[] readedLine;
+            readedLine = invoer.Replace('.', ',').Split(';');
+            it = new IT(readedLine);
+            return it;
+        }
         public List<BeerType> GenerateBeerType()
         {
             BeerType nieuw;
-            StreamReader sr = new StreamReader("beerType.txt");
+            StreamReader sr = new StreamReader("beerType.csv");
             string invoer;
             string[] readedLine;
-          
+
             while ((invoer = sr.ReadLine()) != null)
             {
 
@@ -55,7 +67,7 @@ namespace FlorenceCPL
             beerType = bt;
             int teller = 0;
             BeerType biert;
-            StreamReader sr = new StreamReader("whatToBuy.txt");
+            StreamReader sr = new StreamReader("whatToBuy.csv");
             string invoer;
             string[] readedLine;
             while ((invoer = sr.ReadLine()) != null)
@@ -66,6 +78,7 @@ namespace FlorenceCPL
                 biert.howMuchToBuyBE = int.Parse(readedLine[2]);
                 biert.howMuchToBuySW = int.Parse(readedLine[3]);
                 biert.prducl = readedLine[4];
+                biert.VerkoopPercentage = double.Parse(readedLine[5]);
                 teller++;
             }
 
@@ -74,7 +87,7 @@ namespace FlorenceCPL
         public List<ProductieClusters> GenerateProductionCluster()
         {
             ProductieClusters nieuw;
-            StreamReader sr = new StreamReader("productionCL.txt");
+            StreamReader sr = new StreamReader("productionCL.csv");
             string invoer;
             string test = "";
             string[] readedLine;
@@ -93,8 +106,8 @@ namespace FlorenceCPL
                 }
 
             }
-               
-            
+
+
             return PCL;
         }
         public ProductieClusters helperGenerateProductionCluster1(string[] readedLine)
@@ -132,7 +145,7 @@ namespace FlorenceCPL
 
 
 
-       
+
     }
 
 

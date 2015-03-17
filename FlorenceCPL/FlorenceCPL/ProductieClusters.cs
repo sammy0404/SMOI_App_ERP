@@ -10,11 +10,13 @@ namespace FlorenceCPL
     {
         public string productieclusternaam;
         public int leasePrice;
+        public int totalPersonalCost;
         public List<KeyValuePair<BeerType, int>> typecapacity;
         public ProductieClusters(string[] invoer)
         {
             productieclusternaam = invoer[0];
             leasePrice = int.Parse(invoer[3]);
+     //       totalPersonalCost = int.Parse(invoer[4]);
             typecapacity = new List<KeyValuePair<BeerType, int>>();
         }
         public void addTypeCapacity(BeerType bt, string cap)

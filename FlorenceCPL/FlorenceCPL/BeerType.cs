@@ -31,6 +31,7 @@ namespace FlorenceCPL
         public int producedforSW;
         public int producedforBE;
         public string prducl;
+        public double VerkoopPercentage;
 
         public BeerType(string[] invoer)
         {
@@ -50,6 +51,7 @@ namespace FlorenceCPL
             transportPriceBE = double.Parse(invoer[13]);
             transportPriceSW = double.Parse(invoer[14]);
             voorraad = 0;
+            VerkoopPercentage = 0.0;
         }
         
     }
