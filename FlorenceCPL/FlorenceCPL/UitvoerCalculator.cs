@@ -15,20 +15,23 @@ namespace FlorenceCPL
         public static List<ProductieClusters> PCL;
         public static IT it;
         public static InvoerParser ip = new InvoerParser();
+        public static Marketing marketing;
         public int capital = 1000000;
         public int totaalproduced = 0;
         public double totalcostQ0 = 0;
-        public UitvoerCalculator(List<RawMaterials> rw, List<BeerType> bt, List<ProductieClusters> pcl, IT newit)
+        public double projectcost = 0;
+        public UitvoerCalculator(List<RawMaterials> rw, List<BeerType> bt, List<ProductieClusters> pcl, IT newit, Marketing mark)
         {
             it = newit;
+            marketing = mark;
             rawMaterials = rw;
             beertype = bt;
             PCL = pcl;
             DoWeHaveToProduce();
             ExtraCosts();
-            foreach(BeerType b in bt)
+            foreach (BeerType b in bt)
             {
-                totaalproduced += (b.producedforBE+b.producedforNL+b.producedforSW);
+                totaalproduced += (b.producedforBE + b.producedforNL + b.producedforSW);
             }
             PrettyPrintingResults();
         }
@@ -40,14 +43,16 @@ namespace FlorenceCPL
             for (int i = 0; i < readedLine.Length; i++)
             {
                 totalcostQ0 += int.Parse(readedLine[i]);
+                projectcost += int.Parse(readedLine[i]);
             }
-            
+
+
         }
         public void DoWeHaveToProduce()
         {
             foreach (BeerType bt in beertype)
             {
-                if ((bt.howMuchToBuyNL + bt.howMuchToBuyBE + bt.howMuchToBuySW) > bt.voorraad)
+                if ((bt.howMuchToBuyNL + bt.howMuchToBuyBE + bt.howMuchToBuySW + bt.howMuchToBuyFR) > bt.voorraad)
                 {
                     ProduceBeer(bt);
                 }
@@ -56,7 +61,9 @@ namespace FlorenceCPL
                     bt.producedforNL = bt.howMuchToBuyNL;
                     bt.producedforBE = bt.howMuchToBuyBE;
                     bt.producedforSW = bt.howMuchToBuySW;
-                    bt.voorraad -= (bt.howMuchToBuyNL + bt.howMuchToBuyBE + bt.howMuchToBuySW);
+                    bt.producedforFR = bt.howMuchToBuyFR;
+                    bt.voorraad -= (bt.howMuchToBuyNL + bt.howMuchToBuyBE + bt.howMuchToBuySW + bt.howMuchToBuyFR);
+
                 }
             }
         }
@@ -73,7 +80,7 @@ namespace FlorenceCPL
             if (bt.caneSugar != 0) { DoWeHaverawMaterials(rawMaterials[8], bt.caneSugar, bt); }
             if (bt.coriander != 0) { DoWeHaverawMaterials(rawMaterials[9], bt.coriander, bt); }
             if (bt.orangePeel != 0) { DoWeHaverawMaterials(rawMaterials[10], bt.orangePeel, bt); }
-            while (bt.howMuchToBuyNL + bt.howMuchToBuyBE + bt.howMuchToBuySW > bt.voorraad)
+            while (bt.howMuchToBuyNL + bt.howMuchToBuyBE + bt.howMuchToBuySW  +bt.howMuchToBuyFR> bt.voorraad)
             {
                 int GaIkNuProduceren = PCL.Find(x => x.productieclusternaam == bt.prducl).typecapacity.Find(y => y.Key.beerName == bt.beerName).Value;
 
@@ -94,23 +101,25 @@ namespace FlorenceCPL
             bt.producedforNL = bt.howMuchToBuyNL;
             bt.producedforBE = bt.howMuchToBuyBE;
             bt.producedforSW = bt.howMuchToBuySW;
-            bt.voorraad -= (bt.howMuchToBuyNL + bt.howMuchToBuyBE + bt.howMuchToBuySW);
+            bt.producedforFR = bt.howMuchToBuyFR;
+            bt.voorraad -= (bt.howMuchToBuyNL + bt.howMuchToBuyBE + bt.howMuchToBuySW + bt.howMuchToBuyFR);
+
         }
 
         public void DoWeHaverawMaterials(RawMaterials rm, double btamount, BeerType bt)
         {
             int Productie = PCL.Find(x => x.productieclusternaam == bt.prducl).typecapacity.Find(y => y.Key.beerName == bt.beerName).Value;
-            double nodig = Math.Ceiling((bt.howMuchToBuyNL + bt.howMuchToBuyBE + bt.howMuchToBuySW)*1.0/Productie);
+            double nodig = Math.Ceiling((bt.howMuchToBuyNL + bt.howMuchToBuyBE + bt.howMuchToBuySW + bt.howMuchToBuyFR) * 1.0 / Productie);
             while (rm.voorraad < ((nodig * Productie) * btamount))
             {
-                goBuyRawMaterial(rm, btamount,bt);
+                goBuyRawMaterial(rm, btamount, bt);
             }
         }
         public void goBuyRawMaterial(RawMaterials rm, double btamount, BeerType bt)
         {
             int Productie = PCL.Find(x => x.productieclusternaam == bt.prducl).typecapacity.Find(y => y.Key.beerName == bt.beerName).Value;
-            double nodig = Math.Ceiling((bt.howMuchToBuyNL + bt.howMuchToBuyBE + bt.howMuchToBuySW)*1.0/Productie);
-            while(rm.voorraad<((nodig*Productie)*btamount))
+            double nodig = Math.Ceiling((bt.howMuchToBuyNL + bt.howMuchToBuyBE + bt.howMuchToBuySW + bt.howMuchToBuyFR) * 1.0 / Productie);
+            while (rm.voorraad < ((nodig * Productie) * btamount))
             {
                 rm.voorraad += rm.minOrderAmount;
                 totalcostQ0 += (rm.minOrderAmount * rm.priceBuy);
@@ -123,18 +132,25 @@ namespace FlorenceCPL
         static ExcelWorksheet workbook;
         public void PrettyPrintingResults()
         {
+            double MaxnrProduced = 0.0;
+            foreach (BeerType bt in beertype)
+            {
+                bt.CalculatePCLprijs(PCL);
+                bt.totalproduced = bt.producedforBE + bt.producedforNL + bt.producedforSW + bt.howMuchToBuyFR;
+                MaxnrProduced += totaalproduced;
+            }
+            
+           
+
             package = new ExcelPackage(new MemoryStream());
             workbook = package.Workbook.Worksheets.Add("Results");
-            workbook.Cells[2, 2].Value = "TotaalCost";
-            workbook.Cells[2, 3].Value = totalcostQ0;
-            workbook.Cells[3, 2].Value = rawMaterials[0].materialName;
-            workbook.Cells[3, 3].Value = rawMaterials[0].amountBoughtThisQuarter;
-            workbook.Cells[4, 2].Value = beertype[0].beerName;
-            workbook.Cells[4, 3].Value = beertype[0].producedforNL * beertype[0].transportPriceNL;
+          
 
-
+            workbook.Workbook.Worksheets.Add("RawMaterialss");
             workbook.Workbook.Worksheets.Add("Costs per Product");
             workbook.Workbook.Worksheets.Add("IT");
+            workbook.Workbook.Worksheets.Add("Marketing");
+            
 
 
             workbook.Workbook.Worksheets["Costs per Product"].Cells.Style.Numberformat.Format = "0.00";
@@ -146,16 +162,25 @@ namespace FlorenceCPL
             workbook.Workbook.Worksheets["Costs per Product"].Cells[2, 3].Value = "Produced for Netherlands";
             workbook.Workbook.Worksheets["Costs per Product"].Cells[2, 4].Value = "Produced for Belgium";
             workbook.Workbook.Worksheets["Costs per Product"].Cells[2, 5].Value = "Produced for Sweden";
-            workbook.Workbook.Worksheets["Costs per Product"].Cells[2, 6].Value = "TransportCost to Netherlands";
-            workbook.Workbook.Worksheets["Costs per Product"].Cells[2, 7].Value = "TransportCost to Belgium";
-            workbook.Workbook.Worksheets["Costs per Product"].Cells[2, 8].Value = "TransportCost to Sweden";
-            workbook.Workbook.Worksheets["Costs per Product"].Cells[2, 9].Value = "TransportCost from Netherlands";
-            workbook.Workbook.Worksheets["Costs per Product"].Cells[2, 10].Value = "TransportCost from Belgium";
-            workbook.Workbook.Worksheets["Costs per Product"].Cells[2, 11].Value = "TransportCost from Sweden";
-            workbook.Workbook.Worksheets["Costs per Product"].Cells[2, 12].Value = "Opslagkosten na terugkomst";
-            workbook.Workbook.Worksheets["Costs per Product"].Cells[2, 12].Value = "Gemiddeldemn kosten";
+            workbook.Workbook.Worksheets["Costs per Product"].Cells[2, 6].Value = "Produced for France";
+            workbook.Workbook.Worksheets["Costs per Product"].Cells[2, 7].Value = "TransportCost to Netherlands";
+            workbook.Workbook.Worksheets["Costs per Product"].Cells[2, 8].Value = "TransportCost to Belgium";
+            workbook.Workbook.Worksheets["Costs per Product"].Cells[2, 9].Value = "TransportCost to Sweden";
+            workbook.Workbook.Worksheets["Costs per Product"].Cells[2, 10].Value = "TransportCost to France";
+            workbook.Workbook.Worksheets["Costs per Product"].Cells[2, 11].Value = "TransportCost from Netherlands";
+            workbook.Workbook.Worksheets["Costs per Product"].Cells[2, 12].Value = "TransportCost from Belgium";
+            workbook.Workbook.Worksheets["Costs per Product"].Cells[2, 13].Value = "TransportCost from Sweden";
+            workbook.Workbook.Worksheets["Costs per Product"].Cells[2, 14].Value = "TransportCost from France";
+            workbook.Workbook.Worksheets["Costs per Product"].Cells[2, 15].Value = "Opslagkosten na terugkomst";
+            workbook.Workbook.Worksheets["Costs per Product"].Cells[2, 16].Value = "Gemiddeld per bier NL";
+            workbook.Workbook.Worksheets["Costs per Product"].Cells[2, 17].Value = "Gemiddeld per bier BE";
+            workbook.Workbook.Worksheets["Costs per Product"].Cells[2, 18].Value = "Gemiddeld per bier SW";
+            workbook.Workbook.Worksheets["Costs per Product"].Cells[2, 19].Value = "Gemiddeld per bier FR";
+            workbook.Workbook.Worksheets["Costs per Product"].Cells[2, 20].Value = "Voorraad";
+           
 
             //Y-as van de excelsheet
+
             workbook.Workbook.Worksheets["Costs per Product"].Cells[3, 2].Value = beertype[0].beerName;
             workbook.Workbook.Worksheets["Costs per Product"].Cells[4, 2].Value = beertype[1].beerName;
             workbook.Workbook.Worksheets["Costs per Product"].Cells[5, 2].Value = beertype[2].beerName;
@@ -163,117 +188,154 @@ namespace FlorenceCPL
             workbook.Workbook.Worksheets["Costs per Product"].Cells[7, 2].Value = beertype[4].beerName;
             workbook.Workbook.Worksheets["Costs per Product"].Cells[8, 2].Value = beertype[5].beerName;
             workbook.Workbook.Worksheets["Costs per Product"].Cells[9, 2].Value = beertype[6].beerName;
-            workbook.Workbook.Worksheets["Costs per Product"].Cells[10, 2].Value = "Totaal";
+            workbook.Workbook.Worksheets["Costs per Product"].Cells[10, 2].Value = beertype[7].beerName;
+            workbook.Workbook.Worksheets["Costs per Product"].Cells[11, 2].Value = "Totaal";
 
             //Produced aantal voor Nederland
-            workbook.Workbook.Worksheets["Costs per Product"].Cells[3, 3].Value = beertype[0].producedforNL;
-            workbook.Workbook.Worksheets["Costs per Product"].Cells[4, 3].Value = beertype[1].producedforNL;
-            workbook.Workbook.Worksheets["Costs per Product"].Cells[5, 3].Value = beertype[2].producedforNL;
-            workbook.Workbook.Worksheets["Costs per Product"].Cells[6, 3].Value = beertype[3].producedforNL;
-            workbook.Workbook.Worksheets["Costs per Product"].Cells[7, 3].Value = beertype[4].producedforNL;
-            workbook.Workbook.Worksheets["Costs per Product"].Cells[8, 3].Value = beertype[5].producedforNL;
-            workbook.Workbook.Worksheets["Costs per Product"].Cells[9, 3].Value = beertype[6].producedforNL;
-            workbook.Workbook.Worksheets["Costs per Product"].Cells[10, 3].Value = beertype[0].producedforNL + beertype[1].producedforNL + beertype[2].producedforNL + beertype[3].producedforNL + beertype[4].producedforNL + beertype[5].producedforNL + beertype[6].producedforNL;
-
+            for (int i = 3; i <= 10; i++)
+            {
+                workbook.Workbook.Worksheets["Costs per Product"].Cells[i, 3].Value = beertype[i - 3].producedforNL;
+            }
+            workbook.Workbook.Worksheets["Costs per Product"].Cells[11, 3].Formula = "SUM(C3:C10)";
             //Produced aantal voor Belgie
-            workbook.Workbook.Worksheets["Costs per Product"].Cells[3, 4].Value = beertype[0].producedforBE;
-            workbook.Workbook.Worksheets["Costs per Product"].Cells[4, 4].Value = beertype[1].producedforBE;
-            workbook.Workbook.Worksheets["Costs per Product"].Cells[5, 4].Value = beertype[2].producedforBE;
-            workbook.Workbook.Worksheets["Costs per Product"].Cells[6, 4].Value = beertype[3].producedforBE;
-            workbook.Workbook.Worksheets["Costs per Product"].Cells[7, 4].Value = beertype[4].producedforBE;
-            workbook.Workbook.Worksheets["Costs per Product"].Cells[8, 4].Value = beertype[5].producedforBE;
-            workbook.Workbook.Worksheets["Costs per Product"].Cells[9, 4].Value = beertype[6].producedforBE;
-            workbook.Workbook.Worksheets["Costs per Product"].Cells[10, 4].Value = beertype[0].producedforBE + beertype[1].producedforBE + beertype[2].producedforBE + beertype[3].producedforBE + beertype[4].producedforBE + beertype[5].producedforBE + beertype[6].producedforBE;
+            for (int i = 3; i <= 10; i++)
+            {
+                workbook.Workbook.Worksheets["Costs per Product"].Cells[i, 4].Value = beertype[i - 3].producedforBE;
+            }
+            workbook.Workbook.Worksheets["Costs per Product"].Cells[11, 4].Formula = "SUM(D3:D10)";
 
             //Produced aantal voor Sweden
-            workbook.Workbook.Worksheets["Costs per Product"].Cells[3, 5].Value = beertype[0].producedforSW;
-            workbook.Workbook.Worksheets["Costs per Product"].Cells[4, 5].Value = beertype[1].producedforSW;
-            workbook.Workbook.Worksheets["Costs per Product"].Cells[5, 5].Value = beertype[2].producedforSW;
-            workbook.Workbook.Worksheets["Costs per Product"].Cells[6, 5].Value = beertype[3].producedforSW;
-            workbook.Workbook.Worksheets["Costs per Product"].Cells[7, 5].Value = beertype[4].producedforSW;
-            workbook.Workbook.Worksheets["Costs per Product"].Cells[8, 5].Value = beertype[5].producedforSW;
-            workbook.Workbook.Worksheets["Costs per Product"].Cells[9, 5].Value = beertype[6].producedforSW;
-            workbook.Workbook.Worksheets["Costs per Product"].Cells[10, 5].Value = beertype[0].producedforSW + beertype[1].producedforSW + beertype[2].producedforSW + beertype[3].producedforSW + beertype[4].producedforSW + beertype[5].producedforSW + beertype[6].producedforSW;
+            for (int i = 3; i <= 10; i++)
+            {
+                workbook.Workbook.Worksheets["Costs per Product"].Cells[i, 5].Value = beertype[i - 3].producedforSW;
+            }
+            workbook.Workbook.Worksheets["Costs per Product"].Cells[11, 5].Formula = "SUM(E3:E10)";
+            //Produced aantal voor Frankrijk
+            for (int i = 3; i <= 10; i++)
+            {
+                workbook.Workbook.Worksheets["Costs per Product"].Cells[i, 6].Value = beertype[i - 3].producedforFR;
+            }
+            workbook.Workbook.Worksheets["Costs per Product"].Cells[11, 6].Formula = "SUM(F3:F10)";
 
             //Transportkosten voor Nederland
-            workbook.Workbook.Worksheets["Costs per Product"].Cells[3, 6].Value = beertype[0].transportPriceNL * beertype[0].producedforNL;
-            workbook.Workbook.Worksheets["Costs per Product"].Cells[4, 6].Value = beertype[1].transportPriceNL * beertype[1].producedforNL;
-            workbook.Workbook.Worksheets["Costs per Product"].Cells[5, 6].Value = beertype[2].transportPriceNL * beertype[2].producedforNL;
-            workbook.Workbook.Worksheets["Costs per Product"].Cells[6, 6].Value = beertype[3].transportPriceNL * beertype[3].producedforNL;
-            workbook.Workbook.Worksheets["Costs per Product"].Cells[7, 6].Value = beertype[4].transportPriceNL * beertype[4].producedforNL;
-            workbook.Workbook.Worksheets["Costs per Product"].Cells[8, 6].Value = beertype[5].transportPriceNL * beertype[5].producedforNL;
-            workbook.Workbook.Worksheets["Costs per Product"].Cells[9, 6].Value = beertype[6].transportPriceNL * beertype[6].producedforNL;
-            workbook.Workbook.Worksheets["Costs per Product"].Cells[10, 6].Value = beertype[0].transportPriceNL * beertype[0].producedforNL + beertype[1].transportPriceNL * beertype[1].producedforNL + beertype[2].transportPriceNL * beertype[2].producedforNL + beertype[3].transportPriceNL * beertype[3].producedforNL + beertype[4].transportPriceNL * beertype[4].producedforNL + beertype[5].transportPriceNL * beertype[5].producedforNL + beertype[6].transportPriceNL * beertype[6].producedforNL;
-
+            for (int i = 3; i <= 10; i++)
+            {
+                workbook.Workbook.Worksheets["Costs per Product"].Cells[i, 7].Value = beertype[i-3].transportPriceNL * beertype[i-3].producedforNL;
+            }
+            workbook.Workbook.Worksheets["Costs per Product"].Cells[11, 7].Formula = "SUM(G3:G10)";
+          
             //Transportkosten voor Belgie
-            workbook.Workbook.Worksheets["Costs per Product"].Cells[3, 7].Value = beertype[0].transportPriceBE * beertype[0].producedforBE;
-            workbook.Workbook.Worksheets["Costs per Product"].Cells[4, 7].Value = beertype[1].transportPriceBE * beertype[1].producedforBE;
-            workbook.Workbook.Worksheets["Costs per Product"].Cells[5, 7].Value = beertype[2].transportPriceBE * beertype[2].producedforBE;
-            workbook.Workbook.Worksheets["Costs per Product"].Cells[6, 7].Value = beertype[3].transportPriceBE * beertype[3].producedforBE;
-            workbook.Workbook.Worksheets["Costs per Product"].Cells[7, 7].Value = beertype[4].transportPriceBE * beertype[4].producedforBE;
-            workbook.Workbook.Worksheets["Costs per Product"].Cells[8, 7].Value = beertype[5].transportPriceBE * beertype[5].producedforBE;
-            workbook.Workbook.Worksheets["Costs per Product"].Cells[9, 7].Value = beertype[6].transportPriceBE * beertype[6].producedforBE;
-            workbook.Workbook.Worksheets["Costs per Product"].Cells[10, 7].Value = beertype[0].transportPriceBE * beertype[0].producedforBE + beertype[1].transportPriceBE * beertype[1].producedforBE + beertype[2].transportPriceBE * beertype[2].producedforBE + beertype[3].transportPriceBE * beertype[3].producedforBE + beertype[4].transportPriceBE * beertype[4].producedforBE + beertype[5].transportPriceBE * beertype[5].producedforBE + beertype[6].transportPriceBE * beertype[6].producedforBE;
-
+            for (int i = 3; i <= 10; i++)
+            {
+                workbook.Workbook.Worksheets["Costs per Product"].Cells[i, 8].Value = beertype[i - 3].transportPriceBE * beertype[i - 3].producedforBE;
+            }
+            workbook.Workbook.Worksheets["Costs per Product"].Cells[11, 8].Formula = "SUM(H3:H10)";
+     
             //Transportkosten voor Sweden
-            workbook.Workbook.Worksheets["Costs per Product"].Cells[3, 8].Value = beertype[0].transportPriceSW * beertype[0].producedforSW;
-            workbook.Workbook.Worksheets["Costs per Product"].Cells[4, 8].Value = beertype[1].transportPriceSW * beertype[1].producedforSW;
-            workbook.Workbook.Worksheets["Costs per Product"].Cells[5, 8].Value = beertype[2].transportPriceSW * beertype[2].producedforSW;
-            workbook.Workbook.Worksheets["Costs per Product"].Cells[6, 8].Value = beertype[3].transportPriceSW * beertype[3].producedforSW;
-            workbook.Workbook.Worksheets["Costs per Product"].Cells[7, 8].Value = beertype[4].transportPriceSW * beertype[4].producedforSW;
-            workbook.Workbook.Worksheets["Costs per Product"].Cells[8, 8].Value = beertype[5].transportPriceSW * beertype[5].producedforSW;
-            workbook.Workbook.Worksheets["Costs per Product"].Cells[9, 8].Value = beertype[6].transportPriceSW * beertype[6].producedforSW;
-            workbook.Workbook.Worksheets["Costs per Product"].Cells[10, 8].Value = beertype[0].transportPriceSW * beertype[0].producedforSW + beertype[1].transportPriceSW * beertype[1].producedforSW + beertype[2].transportPriceSW * beertype[2].producedforSW + beertype[3].transportPriceSW * beertype[3].producedforSW + beertype[4].transportPriceSW * beertype[4].producedforSW + beertype[5].transportPriceSW * beertype[5].producedforSW + beertype[6].transportPriceSW * beertype[6].producedforSW;
-
+            for (int i = 3; i <= 10; i++)
+            {
+                workbook.Workbook.Worksheets["Costs per Product"].Cells[i, 9].Value = beertype[i - 3].transportPriceSW * beertype[i - 3].producedforSW;
+            }
+            workbook.Workbook.Worksheets["Costs per Product"].Cells[11, 9].Formula = "SUM(I3:I10)";
+            //Transportkosten voor Frankrijk
+            for (int i = 3; i <= 10; i++)
+            {
+                workbook.Workbook.Worksheets["Costs per Product"].Cells[i, 10].Value = beertype[i - 3].transportPriceFR * beertype[i - 3].producedforFR;
+            }
+            workbook.Workbook.Worksheets["Costs per Product"].Cells[11, 10].Formula = "SUM(J3:J10)";
             //Transportkosten terug voor Nederland
-            workbook.Workbook.Worksheets["Costs per Product"].Cells[3, 9].Value = beertype[0].transportPriceNL * beertype[0].producedforNL * (1 - beertype[0].VerkoopPercentage);
-            workbook.Workbook.Worksheets["Costs per Product"].Cells[4, 9].Value = beertype[1].transportPriceNL * beertype[1].producedforNL * (1 - beertype[1].VerkoopPercentage);
-            workbook.Workbook.Worksheets["Costs per Product"].Cells[5, 9].Value = beertype[2].transportPriceNL * beertype[2].producedforNL * (1 - beertype[2].VerkoopPercentage);
-            workbook.Workbook.Worksheets["Costs per Product"].Cells[6, 9].Value = beertype[3].transportPriceNL * beertype[3].producedforNL * (1 - beertype[3].VerkoopPercentage);
-            workbook.Workbook.Worksheets["Costs per Product"].Cells[7, 9].Value = beertype[4].transportPriceNL * beertype[4].producedforNL * (1 - beertype[4].VerkoopPercentage);
-            workbook.Workbook.Worksheets["Costs per Product"].Cells[8, 9].Value = beertype[5].transportPriceNL * beertype[5].producedforNL * (1 - beertype[5].VerkoopPercentage);
-            workbook.Workbook.Worksheets["Costs per Product"].Cells[9, 9].Value = beertype[6].transportPriceNL * beertype[6].producedforNL * (1 - beertype[6].VerkoopPercentage);
-            workbook.Workbook.Worksheets["Costs per Product"].Cells[10, 9].Value = (beertype[0].transportPriceNL * (1 - beertype[0].VerkoopPercentage) * beertype[0].producedforNL + beertype[1].transportPriceNL * (1 - beertype[1].VerkoopPercentage) * beertype[1].producedforNL + beertype[2].transportPriceNL * (1 - beertype[2].VerkoopPercentage) * beertype[2].producedforNL + beertype[3].transportPriceNL * (1 - beertype[3].VerkoopPercentage) * beertype[3].producedforNL + beertype[4].transportPriceNL * (1 - beertype[4].VerkoopPercentage) * beertype[4].producedforNL + beertype[5].transportPriceNL * (1 - beertype[5].VerkoopPercentage) * beertype[5].producedforNL + beertype[6].transportPriceNL * (1 - beertype[6].VerkoopPercentage) * beertype[6].producedforNL);
-
+            for (int i = 3; i <= 10; i++)
+            {
+                workbook.Workbook.Worksheets["Costs per Product"].Cells[i, 11].Value = beertype[i-3].transportPriceNL * beertype[i-3].producedforNL * (1 - beertype[i-3].VerkoopPercentage);
+            }
+            workbook.Workbook.Worksheets["Costs per Product"].Cells[11, 11].Formula = "SUM(K3:K10)";
+        
             //Transportkosten terug voor Belgie
-            workbook.Workbook.Worksheets["Costs per Product"].Cells[3, 10].Value = beertype[0].transportPriceBE * beertype[0].producedforBE * (1 - beertype[0].VerkoopPercentage);
-            workbook.Workbook.Worksheets["Costs per Product"].Cells[4, 10].Value = beertype[1].transportPriceBE * beertype[1].producedforBE * (1 - beertype[1].VerkoopPercentage);
-            workbook.Workbook.Worksheets["Costs per Product"].Cells[5, 10].Value = beertype[2].transportPriceBE * beertype[2].producedforBE * (1 - beertype[2].VerkoopPercentage);
-            workbook.Workbook.Worksheets["Costs per Product"].Cells[6, 10].Value = beertype[3].transportPriceBE * beertype[3].producedforBE * (1 - beertype[3].VerkoopPercentage);
-            workbook.Workbook.Worksheets["Costs per Product"].Cells[7, 10].Value = beertype[4].transportPriceBE * beertype[4].producedforBE * (1 - beertype[4].VerkoopPercentage);
-            workbook.Workbook.Worksheets["Costs per Product"].Cells[8, 10].Value = beertype[5].transportPriceBE * beertype[5].producedforBE * (1 - beertype[5].VerkoopPercentage);
-            workbook.Workbook.Worksheets["Costs per Product"].Cells[9, 10].Value = beertype[6].transportPriceBE * beertype[6].producedforBE * (1 - beertype[6].VerkoopPercentage);
-            workbook.Workbook.Worksheets["Costs per Product"].Cells[10, 10].Value = (beertype[0].transportPriceBE * (1 - beertype[0].VerkoopPercentage) * beertype[0].producedforBE + beertype[1].transportPriceBE * (1 - beertype[1].VerkoopPercentage) * beertype[1].producedforBE + beertype[2].transportPriceBE * (1 - beertype[2].VerkoopPercentage) * beertype[2].producedforBE + beertype[3].transportPriceBE * (1 - beertype[3].VerkoopPercentage) * beertype[3].producedforBE + beertype[4].transportPriceBE * (1 - beertype[4].VerkoopPercentage) * beertype[4].producedforBE + beertype[5].transportPriceBE * (1 - beertype[5].VerkoopPercentage) * beertype[5].producedforBE + beertype[6].transportPriceBE * (1 - beertype[6].VerkoopPercentage) * beertype[6].producedforBE);
-
+            for (int i = 3; i <= 10; i++)
+            {
+                workbook.Workbook.Worksheets["Costs per Product"].Cells[i, 12].Value = beertype[i - 3].transportPriceBE * beertype[i - 3].producedforBE * (1 - beertype[i - 3].VerkoopPercentage);
+            }
+            workbook.Workbook.Worksheets["Costs per Product"].Cells[11, 12].Formula = "SUM(L3:L10)";
+          
             //Transportkosten terug voor Sweden
-            workbook.Workbook.Worksheets["Costs per Product"].Cells[3, 11].Value = beertype[0].transportPriceSW * beertype[0].producedforSW * (1 - beertype[0].VerkoopPercentage);
-            workbook.Workbook.Worksheets["Costs per Product"].Cells[4, 11].Value = beertype[1].transportPriceSW * beertype[1].producedforSW * (1 - beertype[1].VerkoopPercentage);
-            workbook.Workbook.Worksheets["Costs per Product"].Cells[5, 11].Value = beertype[2].transportPriceSW * beertype[2].producedforSW * (1 - beertype[2].VerkoopPercentage);
-            workbook.Workbook.Worksheets["Costs per Product"].Cells[6, 11].Value = beertype[3].transportPriceSW * beertype[3].producedforSW * (1 - beertype[3].VerkoopPercentage);
-            workbook.Workbook.Worksheets["Costs per Product"].Cells[7, 11].Value = beertype[4].transportPriceSW * beertype[4].producedforSW * (1 - beertype[4].VerkoopPercentage);
-            workbook.Workbook.Worksheets["Costs per Product"].Cells[8, 11].Value = beertype[5].transportPriceSW * beertype[5].producedforSW * (1 - beertype[5].VerkoopPercentage);
-            workbook.Workbook.Worksheets["Costs per Product"].Cells[9, 11].Value = beertype[6].transportPriceSW * beertype[6].producedforSW * (1 - beertype[6].VerkoopPercentage);
-            workbook.Workbook.Worksheets["Costs per Product"].Cells[10, 11].Value = (beertype[0].transportPriceSW * (1 - beertype[0].VerkoopPercentage) * beertype[0].producedforSW + beertype[1].transportPriceSW * (1 - beertype[1].VerkoopPercentage) * beertype[1].producedforSW + beertype[2].transportPriceSW * (1 - beertype[2].VerkoopPercentage) * beertype[2].producedforSW + beertype[3].transportPriceSW * (1 - beertype[3].VerkoopPercentage) * beertype[3].producedforSW + beertype[4].transportPriceSW * (1 - beertype[4].VerkoopPercentage) * beertype[4].producedforSW + beertype[5].transportPriceSW * (1 - beertype[5].VerkoopPercentage) * beertype[5].producedforSW + beertype[6].transportPriceSW * (1 - beertype[6].VerkoopPercentage) * beertype[6].producedforSW);
+            for (int i = 3; i <= 10; i++)
+            {
+                workbook.Workbook.Worksheets["Costs per Product"].Cells[i, 13].Value = beertype[i - 3].transportPriceSW * beertype[i - 3].producedforSW * (1 - beertype[i - 3].VerkoopPercentage);
+            }
+            workbook.Workbook.Worksheets["Costs per Product"].Cells[11, 13].Formula = "SUM(M3:M10)";
+            //Transportkosten terug voor Frankrijk
+            for (int i = 3; i <= 10; i++)
+            {
+                workbook.Workbook.Worksheets["Costs per Product"].Cells[i, 14].Value = beertype[i - 3].transportPriceFR * beertype[i - 3].producedforFR * (1 - beertype[i - 3].VerkoopPercentage);
+            }
+            workbook.Workbook.Worksheets["Costs per Product"].Cells[11, 14].Formula = "SUM(N3:N10)";
 
             //Opslagkosten na terugkomst totaal
-            workbook.Workbook.Worksheets["Costs per Product"].Cells[3, 12].Value = (beertype[0].voorraad + ((beertype[0].producedforNL + beertype[0].producedforBE + beertype[0].producedforSW) * (1 - beertype[0].VerkoopPercentage)));
-            workbook.Workbook.Worksheets["Costs per Product"].Cells[4, 12].Value = (beertype[1].voorraad + ((beertype[1].producedforNL + beertype[1].producedforBE + beertype[1].producedforSW) * (1 - beertype[1].VerkoopPercentage)));
-            workbook.Workbook.Worksheets["Costs per Product"].Cells[5, 12].Value = (beertype[2].voorraad + ((beertype[2].producedforNL + beertype[2].producedforBE + beertype[2].producedforSW) * (1 - beertype[2].VerkoopPercentage)));
-            workbook.Workbook.Worksheets["Costs per Product"].Cells[6, 12].Value = (beertype[3].voorraad + ((beertype[3].producedforNL + beertype[3].producedforBE + beertype[3].producedforSW) * (1 - beertype[3].VerkoopPercentage)));
-            workbook.Workbook.Worksheets["Costs per Product"].Cells[7, 12].Value = (beertype[4].voorraad + ((beertype[4].producedforNL + beertype[4].producedforBE + beertype[4].producedforSW) * (1 - beertype[4].VerkoopPercentage)));
-            workbook.Workbook.Worksheets["Costs per Product"].Cells[8, 12].Value = (beertype[5].voorraad + ((beertype[5].producedforNL + beertype[5].producedforBE + beertype[5].producedforSW) * (1 - beertype[5].VerkoopPercentage)));
-            workbook.Workbook.Worksheets["Costs per Product"].Cells[9, 12].Value = (beertype[6].voorraad + ((beertype[6].producedforNL + beertype[6].producedforBE + beertype[6].producedforSW) * (1 - beertype[6].VerkoopPercentage)));
-            workbook.Workbook.Worksheets["Costs per Product"].Cells[10, 12].Formula = "SUM(L3:L9)";
+            for (int i = 3; i <= 10; i++)
+            {
+                workbook.Workbook.Worksheets["Costs per Product"].Cells[i, 15].Value = (beertype[i-3].voorraad + ((beertype[i - 3].producedforNL + beertype[i - 3].producedforBE + beertype[i - 3].producedforSW + beertype[i - 3].producedforFR) * (1 - beertype[i - 3].VerkoopPercentage)));
+            }
+            workbook.Workbook.Worksheets["Costs per Product"].Cells[11, 15].Formula = "SUM(O3:O10)";
+        
+    
 
-            //Kosten per biertie
-            workbook.Workbook.Worksheets["Costs per Product"].Cells[3, 13].Value =(totalcostQ0/ totaalproduced)    ;
-            workbook.Workbook.Worksheets["Costs per Product"].Cells[4, 13].Value =(totalcostQ0 /totaalproduced)    ;
-            workbook.Workbook.Worksheets["Costs per Product"].Cells[5, 13].Value =(totalcostQ0 /totaalproduced)    ;
-            workbook.Workbook.Worksheets["Costs per Product"].Cells[6, 13].Value =(totalcostQ0 /totaalproduced)    ;
-            workbook.Workbook.Worksheets["Costs per Product"].Cells[7, 13].Value =(totalcostQ0 /totaalproduced)    ;
-            workbook.Workbook.Worksheets["Costs per Product"].Cells[8, 13].Value =(totalcostQ0 /totaalproduced)    ;
-            workbook.Workbook.Worksheets["Costs per Product"].Cells[9, 13].Value = (totalcostQ0 / totaalproduced);                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                 
-            workbook.Workbook.Worksheets["Costs per Product"].Cells[10,13].Value = "SOEPERTOL";
+
+            //kosten per biertje Nederland
+            for (int i = 3; i <= 10; i++)
+            {
+                if (beertype[i - 3].totalproduced != 0)
+                {
+                    if (beertype[i - 3].producedforNL != 0)
+                    {
+                        workbook.Workbook.Worksheets["Costs per Product"].Cells[i, 16].Value = ((projectcost * (beertype[i - 3].totalproduced / MaxnrProduced)) / beertype[i - 3].totalproduced) + (beertype[i - 3].priceperBeer) + ((beertype[i - 3].transportPriceNL) * (2 - beertype[i - 3].VerkoopPercentage)) + (marketing.totaalNed / beertype[i - 3].producedforNL) + ((it.totalITCost * (beertype[i - 3].totalproduced / MaxnrProduced)) / beertype[i - 3].totalproduced) + (beertype[i - 3].clusterprijs) + (1 - beertype[i - 3].VerkoopPercentage);
+                    }
+                }
+            }
+            workbook.Workbook.Worksheets["Costs per Product"].Cells[11, 16].Value = "No info needed";
+            //kosten per biertje Belgium
+            for (int i = 3; i <= 10; i++)
+            {
+                if (beertype[i - 3].totalproduced != 0)
+                {
+                    if (beertype[i - 3].producedforBE != 0)
+                    {
+                        workbook.Workbook.Worksheets["Costs per Product"].Cells[i, 17].Value = ((projectcost * (beertype[i - 3].totalproduced / MaxnrProduced)) / beertype[i - 3].totalproduced) + (beertype[i - 3].priceperBeer) + ((beertype[i - 3].transportPriceBE) * (2 - beertype[i - 3].VerkoopPercentage)) + (marketing.totaalBel / beertype[i - 3].producedforSW) + ((it.totalITCost * (beertype[i - 3].totalproduced / MaxnrProduced)) / beertype[i - 3].totalproduced) + (beertype[i - 3].clusterprijs) + (1 - beertype[i - 3].VerkoopPercentage);
+                    }
+                }
+            }
+            workbook.Workbook.Worksheets["Costs per Product"].Cells[11, 17].Value = "No info needed";
+            //kosten per biertje Sweden
+            for (int i = 3; i <= 10; i++)
+            {
+                if (beertype[i - 3].totalproduced != 0)
+                {
+                    if (beertype[i - 3].producedforSW != 0)
+                    {
+                        workbook.Workbook.Worksheets["Costs per Product"].Cells[i, 18].Value = ((projectcost * (beertype[i - 3].totalproduced / MaxnrProduced)) / beertype[i - 3].totalproduced) + (beertype[i - 3].priceperBeer) + ((beertype[i - 3].transportPriceSW) * (2 - beertype[i - 3].VerkoopPercentage)) + (marketing.totaalSW / beertype[i - 3].producedforNL) + ((it.totalITCost * (beertype[i - 3].totalproduced / MaxnrProduced)) / beertype[i - 3].totalproduced) + (beertype[i - 3].clusterprijs) + (1 - beertype[i - 3].VerkoopPercentage);
+                    }
+                }
+            }
+            workbook.Workbook.Worksheets["Costs per Product"].Cells[11, 18].Value = "No info needed";
+            //kosten per biertje Frankrijk
+            for (int i = 3; i <= 10; i++)
+            {
+                if (beertype[i - 3].totalproduced != 0)
+                {
+                    if (beertype[i - 3].producedforFR != 0)
+                    {
+                        workbook.Workbook.Worksheets["Costs per Product"].Cells[i, 19].Value = ((projectcost * (beertype[i - 3].totalproduced / MaxnrProduced)) / beertype[i - 3].totalproduced) + (beertype[i - 3].priceperBeer) + ((beertype[i - 3].transportPriceFR) * (2 - beertype[i - 3].VerkoopPercentage)) + (marketing.totaalFR / beertype[i - 3].producedforNL) + ((it.totalITCost * (beertype[i - 3].totalproduced / MaxnrProduced)) / beertype[i - 3].totalproduced) + (beertype[i - 3].clusterprijs) + (1 - beertype[i - 3].VerkoopPercentage);
+                    }
+                }
+            }
+            workbook.Workbook.Worksheets["Costs per Product"].Cells[11, 19].Value = "No info needed";
+
+            //print voorraad
+            for (int i = 3; i <= 10; i++)
+            {
+                workbook.Workbook.Worksheets["Costs per Product"].Cells[i, 20].Value = beertype[i - 3].voorraad;
+            }
+            workbook.Workbook.Worksheets["Costs per Product"].Cells[11, 20].Formula = "SUM(O3:O10)";
+
             //DOE EEN HELEBOEL EXCEL SHIT 
 
 
@@ -282,6 +344,126 @@ namespace FlorenceCPL
             workbook.Workbook.Worksheets["IT"].Cells[4, 3].Value = it.totalITCost;
             workbook.Workbook.Worksheets["IT"].Cells[3, 4].Value = "Ratio";
             workbook.Workbook.Worksheets["IT"].Cells[4, 4].Value = it.printRatioIT();
+
+            //Marketing SHIZZLE
+            workbook.Workbook.Worksheets["Marketing"].Cells[3, 3].Value = "Marketing Cost";
+            workbook.Workbook.Worksheets["Marketing"].Cells[4, 3].Value = marketing.totaalMarketingCost;
+            workbook.Workbook.Worksheets["Marketing"].Cells[3, 4].Value = "Cost Netherlands";
+            workbook.Workbook.Worksheets["Marketing"].Cells[4, 4].Value = marketing.totaalNed;
+            workbook.Workbook.Worksheets["Marketing"].Cells[3, 5].Value = "Cost Belgium";
+            workbook.Workbook.Worksheets["Marketing"].Cells[4, 5].Value = marketing.totaalBel;
+            workbook.Workbook.Worksheets["Marketing"].Cells[3, 6].Value = "Cost Sweden";
+            workbook.Workbook.Worksheets["Marketing"].Cells[4, 6].Value = marketing.totaalSW;
+            workbook.Workbook.Worksheets["Marketing"].Cells[3, 6].Value = "Cost France";
+            workbook.Workbook.Worksheets["Marketing"].Cells[4, 6].Value = marketing.totaalFR;
+
+            //RawMaterials SHIZZLE
+            //X-axis
+            for (int i = 3; i <= 13; i++)
+            {
+                workbook.Workbook.Worksheets["RawMaterialss"].Cells[i, 3].Value = rawMaterials[i-3].materialName;
+            }
+            
+
+            workbook.Workbook.Worksheets["RawMaterialss"].Cells[2, 4].Value = "Price";
+            workbook.Workbook.Worksheets["RawMaterialss"].Cells[2, 5].Value = "Voorraad";
+            workbook.Workbook.Worksheets["RawMaterialss"].Cells[2, 6].Value = "Stock Cost";
+
+            //price voor price ingekochte spullen
+            for (int i = 3; i <= 13; i++)
+            {
+                workbook.Workbook.Worksheets["RawMaterialss"].Cells[i, 4].Value = rawMaterials[i-3].amountBoughtThisQuarter * rawMaterials[i-3].priceBuy;
+            }
+            workbook.Workbook.Worksheets["RawMaterialss"].Cells[18, 4].Formula = "SUM(D3:E17)";
+            //price voor voorraad
+            for (int i = 3; i <= 13; i++)
+            {
+                workbook.Workbook.Worksheets["RawMaterialss"].Cells[i, 5].Value = rawMaterials[i - 3].voorraad;
+            }
+            workbook.Workbook.Worksheets["RawMaterialss"].Cells[18, 5].Formula = "SUM(E3:E17)";
+            //price voor stockCost
+            for (int i = 3; i <= 13; i++)
+            {
+                workbook.Workbook.Worksheets["RawMaterialss"].Cells[i, 6].Value = rawMaterials[i - 3].voorraad * rawMaterials[i - 3].priceSupply;
+            }
+
+            workbook.Workbook.Worksheets["RawMaterialss"].Cells[18, 6].Formula = "SUM(F3:F17)";
+
+            workbook.Cells[2, 2].Value = "Omzet";
+            for (int i = 3; i <= 9; i++)
+            {
+                workbook.Workbook.Worksheets["Results"].Cells[i, 3].Value = beertype[i - 3].beerName;
+            }
+            workbook.Workbook.Worksheets["Results"].Cells[2, 4].Value = "Netherlands";
+            workbook.Workbook.Worksheets["Results"].Cells[2, 5].Value = "Belgium";
+            workbook.Workbook.Worksheets["Results"].Cells[2, 6].Value = "Sweden";
+            workbook.Workbook.Worksheets["Results"].Cells[2, 7].Value = "France";
+            workbook.Workbook.Worksheets["Results"].Cells[2, 8].Value = "He Transportkosten";
+            workbook.Workbook.Worksheets["Results"].Cells[2, 9].Value = "Te Transportkosten";
+            workbook.Workbook.Worksheets["Results"].Cells[2, 10].Value = "LeasePrijsPCL";
+            workbook.Workbook.Worksheets["Results"].Cells[2, 11].Value = "MaintenancePCL";
+
+            workbook.Workbook.Worksheets["Results"].Cells[3, 4].Value = beertype[0].producedforNL * beertype[0].VerkoopPercentage * 10;
+            workbook.Workbook.Worksheets["Results"].Cells[4, 4].Value = "0";
+            workbook.Workbook.Worksheets["Results"].Cells[5, 4].Value = beertype[2].producedforNL * beertype[2].VerkoopPercentage * 10;
+            workbook.Workbook.Worksheets["Results"].Cells[6, 4].Value = "0";
+            workbook.Workbook.Worksheets["Results"].Cells[7, 4].Value = "0";
+            workbook.Workbook.Worksheets["Results"].Cells[8, 4].Value = "0";
+            workbook.Workbook.Worksheets["Results"].Cells[9, 4].Value = beertype[6].producedforNL * beertype[6].VerkoopPercentage * 10;
+
+            workbook.Workbook.Worksheets["Results"].Cells[3, 5].Value = beertype[0].producedforBE * beertype[0].VerkoopPercentage * 10;
+            workbook.Workbook.Worksheets["Results"].Cells[4, 5].Value = "0";
+            workbook.Workbook.Worksheets["Results"].Cells[5, 5].Value = beertype[2].producedforBE * beertype[2].VerkoopPercentage * 10;
+            workbook.Workbook.Worksheets["Results"].Cells[6, 5].Value = "0";
+            workbook.Workbook.Worksheets["Results"].Cells[7, 5].Value = "0";
+            workbook.Workbook.Worksheets["Results"].Cells[8, 5].Value = "0";
+            workbook.Workbook.Worksheets["Results"].Cells[9, 5].Value = beertype[6].producedforBE * beertype[6].VerkoopPercentage * 10;
+
+            workbook.Workbook.Worksheets["Results"].Cells[3, 6].Value = beertype[0].producedforSW * beertype[0].VerkoopPercentage * 10;
+            workbook.Workbook.Worksheets["Results"].Cells[4, 6].Value = "0";
+            workbook.Workbook.Worksheets["Results"].Cells[5, 6].Value = beertype[2].producedforSW * beertype[2].VerkoopPercentage * 10;
+            workbook.Workbook.Worksheets["Results"].Cells[6, 6].Value = "0";
+            workbook.Workbook.Worksheets["Results"].Cells[7, 6].Value = "0";
+            workbook.Workbook.Worksheets["Results"].Cells[8, 6].Value = "0";
+            workbook.Workbook.Worksheets["Results"].Cells[9, 6].Value = beertype[6].producedforSW * beertype[6].VerkoopPercentage * 10;
+
+            workbook.Workbook.Worksheets["Results"].Cells[3, 7].Value = beertype[0].producedforFR * beertype[0].VerkoopPercentage * 10;
+            workbook.Workbook.Worksheets["Results"].Cells[4, 7].Value = "0";
+            workbook.Workbook.Worksheets["Results"].Cells[5, 7].Value = beertype[2].producedforFR * beertype[2].VerkoopPercentage * 10;
+            workbook.Workbook.Worksheets["Results"].Cells[6, 7].Value = "0";
+            workbook.Workbook.Worksheets["Results"].Cells[7, 7].Value = "0";
+            workbook.Workbook.Worksheets["Results"].Cells[8, 7].Value = "0";
+            workbook.Workbook.Worksheets["Results"].Cells[9, 7].Value = beertype[6].producedforFR * beertype[2].VerkoopPercentage * 10;
+
+            workbook.Workbook.Worksheets["Results"].Cells[3, 8].Formula = "=SOM('Costs per Product'!G11:J11)";
+            workbook.Workbook.Worksheets["Results"].Cells[3, 9].Formula = "=SOM('Costs per Product'!K11:N11)";
+            int totaalPCL = 0;
+            foreach (ProductieClusters pl in PCL)
+            {
+                totaalPCL += pl.timesneeded* pl.leasePrice;
+            }
+            workbook.Workbook.Worksheets["Results"].Cells[3, 10].Value = (totaalPCL / 125) * 100;
+            workbook.Workbook.Worksheets["Results"].Cells[3, 11].Value = (totaalPCL / 125) * 25;
+
+            workbook.Workbook.Worksheets["Results"].Cells[11, 4].Value = "Totaal Omzet";
+            workbook.Workbook.Worksheets["Results"].Cells[11, 5].Formula = "SUM(D3:D9) + SUM(E3:E9) +SUM(F3:F9)+ SUM(G3:G9)";
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 

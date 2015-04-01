@@ -47,8 +47,10 @@
   <ItemGroup>
     <Compile Include="BeerType.cs" />
     <Compile Include="Calculations.cs" />
+    <Compile Include="HumanR.cs" />
     <Compile Include="InvoerParser.cs" />
     <Compile Include="IT.cs" />
+    <Compile Include="Marketing.cs" />
     <Compile Include="ProductieClusters.cs" />
     <Compile Include="Program.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />

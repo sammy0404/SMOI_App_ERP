@@ -24,17 +24,26 @@ namespace FlorenceCPL
         public double transportPriceNL;
         public double transportPriceSW;
         public double transportPriceBE;
+        public double transportPriceFR;
         public int howMuchToBuyNL;
         public int howMuchToBuySW;
         public int howMuchToBuyBE;
+        public int howMuchToBuyFR;
         public int producedforNL;
         public int producedforSW;
         public int producedforBE;
+        public int producedforFR;
         public string prducl;
         public double VerkoopPercentage;
+        public double priceperBeer;
+        public int totalproduced;
+        public double clusterprijs;
+        public List<RawMaterials> rw;
+        public List<ProductieClusters> PCL;
 
-        public BeerType(string[] invoer)
+        public BeerType(string[] invoer, List<RawMaterials> raw)
         {
+            rw = raw;
             beerName = invoer[0];
             malt = double.Parse(invoer[1]);
             naturalWater = double.Parse(invoer[2]);
@@ -50,9 +59,64 @@ namespace FlorenceCPL
             transportPriceNL = double.Parse(invoer[12]);
             transportPriceBE = double.Parse(invoer[13]);
             transportPriceSW = double.Parse(invoer[14]);
-            voorraad = 0;
-            VerkoopPercentage = 0.0;
+            transportPriceFR = double.Parse(invoer[15]);
+            VerkoopPercentage = double.Parse(invoer[16]);
+            priceperBeer = 0;
+            clusterprijs = 0;
+            voorraad = int.Parse(invoer[17]);
+            if (malt != 0)
+            {
+                priceperBeer += (malt * rw[0].priceBuy);
+            }
+            if (naturalWater != 0)
+            {
+                priceperBeer += (naturalWater * rw[1].priceBuy);
+            }
+            if (hops != 0)
+            {
+                priceperBeer += (hops * rw[2].priceBuy);
+            }
+            if (munichMalt != 0)
+            {
+                priceperBeer += (munichMalt * rw[3].priceBuy);
+            }
+            if (caramelMalt != 0)
+            {
+                priceperBeer += (caramelMalt * rw[4].priceBuy);
+            }
+            if (wheat != 0)
+            {
+                priceperBeer += (wheat * rw[5].priceBuy);
+            }
+            if (rye != 0)
+            {
+                priceperBeer += (rye * rw[6].priceBuy);
+            }
+            if (maize != 0)
+            {
+                priceperBeer += (maize * rw[7].priceBuy);
+            }
+            if (caneSugar != 0)
+            {
+                priceperBeer += (caneSugar * rw[8].priceBuy);
+            }
+            if (coriander != 0)
+            {
+                priceperBeer += (coriander * rw[9].priceBuy);
+            }
+            if (orangePeel != 0)
+            {
+                priceperBeer += (orangePeel * rw[10].priceBuy);
+            }
+
+
         }
-        
+        public void CalculatePCLprijs(List<ProductieClusters> pcl)
+        {
+            PCL = pcl;
+            clusterprijs = ((PCL.Find(x => x.productieclusternaam == prducl).totalPersonalCost) + (PCL.Find(x=>x.productieclusternaam == prducl).leasePrice))/(PCL.Find(x=> x.productieclusternaam == prducl).typecapacity[0].Value) ;
+
+        }
     }
+
 }

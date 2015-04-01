@@ -16,6 +16,7 @@ namespace FlorenceCPL
         public List<BeerType> beerType = new List<BeerType>();
         public List<ProductieClusters> PCL = new List<ProductieClusters>();
         public IT it;
+        public Marketing marketing;
         public void InvoerParsers()
         {
 
@@ -26,6 +27,7 @@ namespace FlorenceCPL
             RawMaterials nieuw;
             StreamReader sr = new StreamReader("rawMaterials.csv");
             string invoer;
+            invoer = sr.ReadLine();
             string[] readedLine;
             while ((invoer = sr.ReadLine()) != null)
             {
@@ -46,18 +48,29 @@ namespace FlorenceCPL
             it = new IT(readedLine);
             return it;
         }
+        public Marketing FixMarketing()
+        {
+            StreamReader sr = new StreamReader("marketing.csv");
+            string invoer;
+            invoer = sr.ReadLine();
+            invoer = sr.ReadLine();
+            string[] readedLine;
+            readedLine = invoer.Replace('.', ',').Split(';');
+            marketing = new Marketing(readedLine);
+            return marketing;
+        }
         public List<BeerType> GenerateBeerType()
         {
             BeerType nieuw;
             StreamReader sr = new StreamReader("beerType.csv");
             string invoer;
+            invoer = sr.ReadLine();
             string[] readedLine;
-
             while ((invoer = sr.ReadLine()) != null)
             {
 
                 readedLine = invoer.Replace('.', ',').Split(';');
-                nieuw = new BeerType(readedLine);
+                nieuw = new BeerType(readedLine, rawMaterials);
                 beerType.Add(nieuw);
             }
             return beerType;
@@ -69,6 +82,7 @@ namespace FlorenceCPL
             BeerType biert;
             StreamReader sr = new StreamReader("whatToBuy.csv");
             string invoer;
+            invoer = sr.ReadLine();
             string[] readedLine;
             while ((invoer = sr.ReadLine()) != null)
             {
@@ -77,8 +91,9 @@ namespace FlorenceCPL
                 biert.howMuchToBuyNL = int.Parse(readedLine[1]);
                 biert.howMuchToBuyBE = int.Parse(readedLine[2]);
                 biert.howMuchToBuySW = int.Parse(readedLine[3]);
-                biert.prducl = readedLine[4];
-                biert.VerkoopPercentage = double.Parse(readedLine[5]);
+                biert.howMuchToBuyFR = int.Parse(readedLine[4]);
+                biert.prducl = readedLine[5];
+                biert.VerkoopPercentage = double.Parse(readedLine[6]);
                 teller++;
             }
 
@@ -109,6 +124,26 @@ namespace FlorenceCPL
 
 
             return PCL;
+        }
+        public void AddPCLPersonal()
+        {
+             StreamReader sr = new StreamReader("PersonCPL.csv");
+            string invoer;
+            invoer = sr.ReadLine();
+            string[] readedLine;
+            while ((invoer = sr.ReadLine()) != null)
+            {
+                readedLine = invoer.Replace('.', ',').Split(';');
+                PCLPersonalHelper(readedLine, PCL);
+            }
+        }
+        public void PCLPersonalHelper(string [] invoer, List<ProductieClusters> pcl)
+        {
+            ProductieClusters pl = pcl.Find(x => x.productieclusternaam == invoer[0]);
+            pl.lowprodgen = int.Parse(invoer[1]);
+            pl.highprodgen = int.Parse(invoer[2]);
+            pl.lowprodspec = int.Parse(invoer[3]);
+            pl.highprodspec = int.Parse(invoer[4]);
         }
         public ProductieClusters helperGenerateProductionCluster1(string[] readedLine)
         {

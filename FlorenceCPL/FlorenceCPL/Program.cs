@@ -13,6 +13,7 @@ namespace FlorenceCPL
         public static List<ProductieClusters> productieCluster;
         public static IT it;
         public static InvoerParser ip = new InvoerParser();
+        public static Marketing marketing;
         static void Main()
         {
             Gegevensgeneratie();
@@ -25,12 +26,13 @@ namespace FlorenceCPL
             beertype = ip.GenerateBeerType();
             productieCluster = ip.GenerateProductionCluster();
             it = ip.FixIT();
+            marketing = ip.FixMarketing();
         
         }
         static void IsHetVerstandigTeKopen()
         {
             ip.HowMuchToBuy(beertype);
-            UitvoerCalculator uvc = new UitvoerCalculator(rawMaterials, beertype, productieCluster, it);
+            UitvoerCalculator uvc = new UitvoerCalculator(rawMaterials, beertype, productieCluster, it, marketing);
         }
         
     }

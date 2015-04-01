@@ -24,7 +24,7 @@ namespace FlorenceCPL
             priceSupply = double.Parse(invoer[2]);
             minOrderAmount = int.Parse(invoer[3]);
             bulkPrice = double.Parse(invoer[4]);
-            voorraad = 0;
+            voorraad = double.Parse(invoer[5]);
             amountBoughtThisQuarter = 0;
         }
     }
